@@ -1,0 +1,39 @@
+---
+title: Prompts are interfaces, not spells
+date: "2026-03-09"
+summary: A practical way to think about prompt engineering once the novelty wears off — treat the prompt as a contract between you and the model.
+tags:
+  - Prompt Engineering
+  - AI Automation
+---
+Early on, prompting feels like casting spells. You phrase something just right, the model does something impressive, and you can't quite explain why. That's a fine way to start, but it doesn't scale. The moment a prompt has to run a hundred times against real inputs, vibes stop being enough.
+
+The shift that helped me most was to stop treating a prompt as a magic phrase and start treating it as an **interface** — a contract that defines what goes in, what comes out, and what happens at the edges.
+
+## A prompt has the same parts as a function
+
+Look at a prompt you trust and you'll usually find four things, even if you never named them:
+
+- **Inputs.** The variables — the user's text, the retrieved context, the examples.
+- **Behaviour.** What the model should do with those inputs, stated as plainly as you can manage.
+- **Output shape.** The exact format you expect back, so the next step in the pipeline can rely on it.
+- **Failure handling.** What to do when the input is empty, off-topic, or adversarial.
+
+The last one is where most prompts quietly break. A demo only ever sees friendly inputs. A system sees everything.
+
+## Write the output contract first
+
+The habit that made my prompts reliable was writing the output format before the instructions. If the next step needs JSON with three fields, I say so at the top, show one example, and then describe the behaviour. The model has a target to aim at instead of a mood to interpret.
+
+```
+Return one JSON object: { "topic": string, "confidence": 0-1, "notes": string }
+If the input has no clear topic, set topic to "unknown" and confidence to 0.
+```
+
+It's not elegant. It is predictable, which matters far more.
+
+## Test prompts like code
+
+Once a prompt is an interface, you can do the obvious thing: collect a dozen real inputs, including the ugly ones, and run them every time you change the wording. Most regressions show up immediately. A prompt that improves the happy path while quietly breaking three edge cases is the rule, not the exception.
+
+None of this is glamorous. But the difference between a clever prompt and a dependable one is mostly the unglamorous work of treating it like part of a system instead of a one-off trick.

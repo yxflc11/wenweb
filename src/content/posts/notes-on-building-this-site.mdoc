@@ -1,0 +1,38 @@
+---
+title: Notes on building this site
+date: "2025-12-02"
+summary: Why the portfolio looks the way it does — the constraints I set, the things I cut, and what the WebGL detail is really for.
+tags:
+  - Design
+  - Engineering
+  - Notes
+---
+This site went through a few lives. It started loud — black background, acid green, type the size of a billboard. It was fun to look at for about ten seconds and exhausting after that. So I rebuilt it around a different idea: restraint that still has a point of view.
+
+A few constraints did most of the work.
+
+## One accent, one gray family
+
+The palette is almost entirely neutral. There's a single near-black, a single warm off-white, and a small set of grays tinted from the same hue. No second accent fighting for attention. When everything is calm, the few moments that aren't — a hover, a tilt, the live clock ticking — actually register.
+
+## Type carries the design
+
+With the colour turned down, typography has to do the heavy lifting. Three faces, each with a job:
+
+- A display grotesk for anything that should feel like a statement.
+- A clean sans for reading.
+- A monospace for the technical bits — the clock, the coordinates, the labels.
+
+Mixing a proportional face with a monospace is an old editorial trick. It makes a page feel engineered without a single line of chrome.
+
+## The WebGL detail earns its place
+
+There's a piece of 3D on the page: hover a project and its poster floats up as a card that tilts with the cursor, and the hero greeting is liquid glass. It would have been easy to drown the page in WebGL. I didn't, for one reason — the effects only mean something because the rest of the page is quiet.
+
+It also loads in its own chunk, so the initial page stays light and the heavy graphics code only arrives when a desktop visitor actually needs it.
+
+> Restraint isn't the absence of ideas. It's spending your one loud moment carefully.
+
+## What I cut
+
+Plenty. A particle background. A second accent colour. An animated intro that ran too long. Each one looked good in isolation and made the whole worse. The hardest part of the redesign wasn't adding the nice details — it was deleting the ones that didn't pull their weight.

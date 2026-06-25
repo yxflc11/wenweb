@@ -1,0 +1,28 @@
+---
+title: Codex · Claude · GPT Stack
+year: "2026"
+category: Developer Tooling
+role: Tooling · workflow
+date: "2026-04-12"
+summary: A working setup for using several coding models together — each for what it's best at, with one consistent workflow on top.
+link: "https://github.com/yxflc11"
+---
+No single model is best at everything, and switching between them by hand is its own tax. This is the stack I settled on for letting Codex, Claude, and GPT each do what they're good at, behind one consistent workflow.
+
+## The idea
+
+Treat the models as interchangeable engines behind a stable interface. The workflow — how I describe a task, review a diff, and verify it — stays the same regardless of which model is doing the work. Only the engine changes.
+
+## Roles
+
+- **Planning & long-context reasoning** goes to the model that holds the most context without losing the thread.
+- **Tight, iterative edits** go to whichever model is fastest to verify against a live preview.
+- **Verification** is never skipped — every change is run and observed, not trusted.
+
+```
+task → plan → edit → run → observe → repeat
+```
+
+## Why it holds up
+
+Because the workflow is the constant and the model is the variable, swapping in a better model later costs nothing. The investment is in the process, not in any one provider — which is the whole point.
