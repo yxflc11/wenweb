@@ -12,9 +12,14 @@ import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import * as THREE from "three";
 import { buildCursiveGeometry } from "./cursiveGeometry";
 
-// Connected handwriting font extruded into liquid glass; renders stacked,
-// centred cursive lines (e.g. "Before / The Leap.").
-const FONT = "/fonts/DancingScript.ttf";
+// Font extruded into liquid glass; renders stacked, centred lines.
+// NOTE: test-rounded.ttf is a LOCAL bold-block test (proprietary, not committed).
+// To ship the block look, drop an OFL rounded font (Fredoka/Baloo/Quicksand) here.
+const FONT = "/fonts/test-rounded.ttf";
+
+// Bright pale-blue backdrop the glass transmits, so the transparent glass reads as
+// luminous light-blue liquid (haoqi-style) instead of vanishing on a dark section.
+const GLASS_BG = new THREE.Color("#d4e7ff");
 
 type PointerRef = React.RefObject<{ x: number; y: number }>;
 
@@ -57,36 +62,38 @@ function Hello({
     if (!group.current) return;
     const p = pointer.current ?? { x: 0, y: 0 };
     // Ease the wordmark toward the cursor for a subtle parallax tilt.
-    group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, p.x * 0.45, 0.05);
-    group.current.rotation.x = THREE.MathUtils.lerp(group.current.rotation.x, -p.y * 0.28, 0.05);
-    // Breathes around its anchor height (hero sits above centre; closing centres).
-    group.current.position.y = centerY + Math.sin(state.clock.elapsedTime * 0.8) * 0.05;
+    group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, p.x * 0.2, 0.04);
+    group.current.rotation.x = THREE.MathUtils.lerp(group.current.rotation.x, -p.y * 0.12, 0.04);
+    // Gentle breathe; kept small so the refraction pattern stays stable (motion
+    // across thin strokes is what reads as flicker).
+    group.current.position.y = centerY + Math.sin(state.clock.elapsedTime * 0.7) * 0.02;
   });
 
   return (
-    <Float speed={1.6} rotationIntensity={0.18} floatIntensity={0.5}>
+    <Float speed={0.7} rotationIntensity={0.05} floatIntensity={0.16}>
       <group ref={group} position={[0, centerY, 0]} scale={scale}>
         {geo && (
           <mesh geometry={geo}>
             <MeshTransmissionMaterial
+              background={GLASS_BG}
               backside
-              backsideThickness={0.6}
-              thickness={0.5}
+              backsideThickness={0.18}
+              thickness={0.16}
               samples={reduced ? 4 : 6}
               resolution={reduced ? 160 : 256}
               transmission={1}
-              roughness={0.03}
-              ior={1.43}
-              chromaticAberration={reduced ? 0.1 : 0.5}
-              anisotropy={0.3}
-              distortion={reduced ? 0.06 : 0.4}
-              distortionScale={0.35}
-              temporalDistortion={reduced ? 0 : 0.15}
+              roughness={reduced ? 0.1 : 0.08}
+              ior={1.25}
+              chromaticAberration={reduced ? 0.06 : 0.16}
+              anisotropy={0.2}
+              distortion={reduced ? 0.04 : 0.12}
+              distortionScale={0.3}
+              temporalDistortion={0}
               clearcoat={1}
-              clearcoatRoughness={0.05}
-              attenuationDistance={2.5}
-              attenuationColor="#ffffff"
-              color="#eef1f6"
+              clearcoatRoughness={0.2}
+              attenuationDistance={12}
+              attenuationColor="#cfe2ff"
+              color="#ffffff"
             />
           </mesh>
         )}
@@ -100,16 +107,19 @@ function Hello({
 function Lights() {
   const rig = useRef<THREE.Group>(null);
   useFrame((state, delta) => {
-    if (rig.current) rig.current.rotation.z += delta * 0.12;
+    // Slow drift keeps reflections alive without sweeping hot specular across the
+    // thin strokes (which read as flicker).
+    if (rig.current) rig.current.rotation.z += delta * 0.02;
   });
   return (
     <Environment resolution={256} frames={Infinity}>
-      <color attach="background" args={["#0a0a0b"]} />
+      {/* Bright sky-blue surround so the glass reflects/refracts luminous light-blue. */}
+      <color attach="background" args={["#bcd8f7"]} />
       <Lightformer form="rect" intensity={3} position={[0, 4, -6]} scale={[10, 4, 1]} color="#ffffff" />
-      <Lightformer form="rect" intensity={2} position={[-5, -1, -4]} scale={[6, 6, 1]} color="#9fb4ff" />
-      <Lightformer form="rect" intensity={2} position={[5, 1, -4]} scale={[6, 6, 1]} color="#ffd9a8" />
+      <Lightformer form="rect" intensity={2.4} position={[-5, -1, -4]} scale={[6, 6, 1]} color="#bcd4ff" />
+      <Lightformer form="rect" intensity={2} position={[5, 1, -4]} scale={[6, 6, 1]} color="#eaf2ff" />
       <group ref={rig}>
-        <Lightformer form="ring" intensity={2.4} position={[3, 2, 2]} scale={3} color="#cfe0ff" />
+        <Lightformer form="ring" intensity={2.6} position={[3, 2, 2]} scale={3} color="#dcebff" />
         <Lightformer form="circle" intensity={2} position={[-3, -2, 2]} scale={3} color="#ffffff" />
       </group>
     </Environment>
@@ -126,7 +136,7 @@ function fitScale(w: number) {
 
 export default function HeroGlass({
   reduced = false,
-  word = "Before\nThe Leap.",
+  word = "BEFORE\nTHE LEAP",
   anchor = ".hero",
   centerY = 0.85
 }: {
@@ -188,7 +198,7 @@ export default function HeroGlass({
       </Suspense>
       {!reduced && (
         <EffectComposer>
-          <Bloom mipmapBlur luminanceThreshold={0.55} luminanceSmoothing={0.3} intensity={0.7} />
+          <Bloom mipmapBlur luminanceThreshold={1.0} luminanceSmoothing={0.5} intensity={0.22} />
         </EffectComposer>
       )}
     </Canvas>

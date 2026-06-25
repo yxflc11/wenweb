@@ -6,8 +6,13 @@ import * as opentype from "opentype.js";
 // Outlines come from opentype.js; counters (the holes in e/o/l) are resolved by
 // three's ShapePath.toShapes — the same path FontLoader uses for glyphs.
 
+// Shipped fallback if the requested font 404s (e.g. the local rounded test font
+// isn't committed) — keeps the glass from breaking on a fresh checkout / deploy.
+const FALLBACK_FONT = "/fonts/DancingScript.ttf";
+
 async function loadFont(url: string): Promise<opentype.Font> {
-  const res = await fetch(url);
+  let res = await fetch(url);
+  if (!res.ok && url !== FALLBACK_FONT) res = await fetch(FALLBACK_FONT);
   const buffer = await res.arrayBuffer();
   // opentype 2.x: `parse` is the supported API, but the export name varies
   // between the CJS/ESM builds bundlers pick (`parse` vs `_parse`). Resolve it
@@ -29,27 +34,33 @@ export async function buildCursiveGeometry(
   const font = await loadFont(url);
   const unit = 100;
   const lines = word.split("\n");
-  const lineHeight = unit * 1.32;
+  // Tight line stacking so the lines crowd/overlap a little (haoqi-style).
+  const lineHeight = unit * 1.06;
+
+  // Justify every line to the widest one so the block's left and right edges line
+  // up (两边对齐); narrower lines stretch wider, reading as more connected.
+  const measured = lines.map((line) => ({ line, width: font.getAdvanceWidth(line, unit) || 1 }));
+  const W = Math.max(...measured.map((m) => m.width));
 
   const shapePath = new THREE.ShapePath();
-  lines.forEach((line, i) => {
-    // Centre each line on x=0 and stack downward (font coords are y-down; the
-    // whole geometry is flipped upright afterwards).
-    const advance = font.getAdvanceWidth(line, unit);
-    const path = font.getPath(line, -advance / 2, i * lineHeight, unit);
+  measured.forEach(({ line, width }, i) => {
+    const xs = W / width; // horizontal justify scale for this line
+    const fx = (x: number) => x * xs - W / 2;
+    // Stack downward (font coords are y-down; flipped upright afterwards).
+    const path = font.getPath(line, 0, i * lineHeight, unit);
     for (const cmd of path.commands) {
       switch (cmd.type) {
         case "M":
-          shapePath.moveTo(cmd.x, cmd.y);
+          shapePath.moveTo(fx(cmd.x), cmd.y);
           break;
         case "L":
-          shapePath.lineTo(cmd.x, cmd.y);
+          shapePath.lineTo(fx(cmd.x), cmd.y);
           break;
         case "Q":
-          shapePath.quadraticCurveTo(cmd.x1, cmd.y1, cmd.x, cmd.y);
+          shapePath.quadraticCurveTo(fx(cmd.x1), cmd.y1, fx(cmd.x), cmd.y);
           break;
         case "C":
-          shapePath.bezierCurveTo(cmd.x1, cmd.y1, cmd.x2, cmd.y2, cmd.x, cmd.y);
+          shapePath.bezierCurveTo(fx(cmd.x1), cmd.y1, fx(cmd.x2), cmd.y2, fx(cmd.x), cmd.y);
           break;
         // 'Z' closes the current sub-path automatically.
       }
@@ -59,10 +70,11 @@ export async function buildCursiveGeometry(
   const shapes = shapePath.toShapes(true);
 
   const geo = new THREE.ExtrudeGeometry(shapes, {
-    depth: unit * 0.16,
+    depth: unit * 0.2,
     bevelEnabled: true,
-    bevelThickness: unit * 0.018,
-    bevelSize: unit * 0.012,
+    // Fatter bevel rounds the thin strokes into inflated, liquid-looking tubes.
+    bevelThickness: unit * 0.03,
+    bevelSize: unit * 0.02,
     bevelSegments: reduced ? 2 : 4,
     curveSegments: reduced ? 6 : 11
   });
@@ -72,7 +84,7 @@ export async function buildCursiveGeometry(
   geo.computeBoundingBox();
   const bb = geo.boundingBox!;
   const height = bb.max.y - bb.min.y || 1;
-  const target = 2.4;
+  const target = 2.3;
   const s = target / height;
   geo.center();
   geo.scale(s, s, s);

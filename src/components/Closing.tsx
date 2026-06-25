@@ -47,7 +47,7 @@ export default function Closing() {
   return (
     <section ref={sectionRef} className="closing" id="closing" aria-label="Get in touch">
       <div className="closing-stage" aria-hidden="true">
-        {near && <HeroGlass reduced={reduced} word={"After\nThe Sky."} anchor=".closing" centerY={0.5} />}
+        {near && <HeroGlass reduced={reduced} word={"AFTER\nTHE SKY"} anchor=".closing" centerY={0.5} />}
       </div>
       <Stickers />
       <div className="closing-copy">
