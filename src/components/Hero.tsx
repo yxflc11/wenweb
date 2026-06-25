@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { useUI } from "./ui-context";
+import Stickers from "./Stickers";
 
 // WebGL is client-only and heavy — load it in its own chunk after first paint.
 const HeroGlass = dynamic(() => import("./HeroGlass"), { ssr: false });
@@ -31,11 +32,13 @@ export default function Hero() {
       <div className="hero-stage" aria-hidden="true">
         {show3D && <HeroGlass reduced={reduced} />}
       </div>
+      <Stickers />
       <div className="hero-copy">
-        <p className="hero-eyebrow reveal">Bingwen He — Software &amp; AI Automation</p>
+        <p className="hero-eyebrow reveal">Bingwen He — Design Engineer · AI Automation</p>
         <p className="hero-lead reveal" style={{ "--d": "120ms" } as React.CSSProperties}>
-          Design engineer. Thinking in systems, building AI-era workflows with care —
-          toward an AI-native one-person company.
+          I build the systems that let one person move like a team — automating the
+          repeatable so judgement and taste stay human. The work before the leap into an
+          AI-native one-person company.
         </p>
         <div className="hero-actions reveal" style={{ "--d": "220ms" } as React.CSSProperties}>
           <a className="btn" href="/#work" onClick={nav("#work")} onMouseEnter={hoverTick}>

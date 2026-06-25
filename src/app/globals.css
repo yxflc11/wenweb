@@ -716,6 +716,62 @@ html[data-theme="dark"] .ctrl-dot {
   100% { transform: translateY(44px); opacity: 0; }
 }
 
+/* --- Sticker collage (haoqi-style, decorative) ----------------------------- */
+.stickers {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.sticker {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--s, 80px);
+  transform: translate(-50%, -50%) rotate(var(--r, 0deg));
+  filter: drop-shadow(0 8px 18px rgba(8, 10, 14, .22));
+}
+
+.sticker-inner {
+  display: block;
+  animation: stickerBob var(--dur, 6s) ease-in-out var(--delay, 0s) infinite;
+}
+
+.sticker-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* The brand stamp is monochrome and follows the theme ink. */
+.sticker-stamp { color: var(--fg); }
+.sticker-stamp-text {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9.4px;
+  letter-spacing: .1em;
+  fill: currentColor;
+  text-transform: uppercase;
+}
+
+@keyframes stickerBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+
+/* Slow the stamp's ring rotation in for life; gentle, continuous. */
+.sticker-stamp { animation: stampSpin 26s linear infinite; }
+@keyframes stampSpin { to { transform: rotate(360deg); } }
+
+/* Thin out the collage on small screens so it frames rather than crowds, and
+   drop the low-sitting stickers that would clash the copy on narrow screens. */
+@media (max-width: 760px) {
+  .sticker { width: calc(var(--s, 80px) * .7); }
+  .sticker--low { display: none; }
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -825,6 +881,7 @@ html[data-theme="dark"] .ctrl-dot {
 }
 
 .work-row {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) auto auto 1.2em;
   align-items: baseline;
@@ -832,11 +889,41 @@ html[data-theme="dark"] .ctrl-dot {
   padding: 15px 0;
   border-bottom: 1px solid var(--line-soft);
   color: var(--fg);
-  transition: padding-left 320ms var(--ease), opacity 220ms ease;
+  transition: padding-left 360ms var(--ease), opacity 220ms ease;
 }
 
-.work-row:hover {
-  padding-left: 12px;
+/* Acid index bar that grows in from the left edge on hover. */
+.work-row::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--acid);
+  transform: scaleY(0);
+  transform-origin: top;
+  opacity: 0;
+  transition: transform 360ms var(--ease), opacity 240ms ease;
+}
+
+.work-row:hover,
+.work-row:focus-visible {
+  padding-left: 20px;
+}
+
+.work-row:hover::before,
+.work-row:focus-visible::before {
+  transform: scaleY(1);
+  opacity: 1;
+}
+
+/* Meta recedes on hover/focus so the row's focus lands on the title + accent. */
+.work-row:hover .work-cat,
+.work-row:focus-visible .work-cat {
+  opacity: .5;
+  transition: opacity 240ms ease;
 }
 
 .work-title {
@@ -859,13 +946,48 @@ html[data-theme="dark"] .ctrl-dot {
   text-align: right;
 }
 
+/* Category chip (haoqi's CODING-PROJECT pill, scaled to our denser list).
+   Regular rows get a subtle acid-tinted outline; featured rows (with a case
+   study / preview) get the solid acid fill — so the colour signals importance
+   instead of a uniform wall of green. */
 .work-type {
+  justify-self: end;
+  align-self: center;
   font-family: var(--font-mono);
   font-size: var(--text-2xs);
-  letter-spacing: .04em;
+  letter-spacing: .06em;
   text-transform: uppercase;
-  color: var(--faint);
-  text-align: right;
+  padding: .3em .62em .24em;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acid) 50%, var(--line));
+  line-height: 1;
+  white-space: nowrap;
+  transition: transform 260ms var(--ease), box-shadow 260ms var(--ease), color 260ms ease;
+}
+
+.work-row.has-preview .work-type {
+  background: var(--acid);
+  color: var(--acid-ink);
+  box-shadow: none;
+}
+
+.work-row:hover .work-type,
+.work-row:focus-visible .work-type {
+  transform: translateY(-1px);
+}
+
+/* Featured (solid) chips lift with an acid glow; outline chips brighten. */
+.work-row.has-preview:hover .work-type,
+.work-row.has-preview:focus-visible .work-type {
+  box-shadow: 0 4px 16px -6px color-mix(in srgb, var(--acid) 70%, transparent);
+}
+
+.work-row:not(.has-preview):hover .work-type,
+.work-row:not(.has-preview):focus-visible .work-type {
+  box-shadow: inset 0 0 0 1px var(--acid);
+  color: var(--fg);
 }
 
 .work-arrow {
@@ -876,7 +998,8 @@ html[data-theme="dark"] .ctrl-dot {
   transition: opacity 260ms ease, transform 260ms var(--ease);
 }
 
-.work-row:hover .work-arrow {
+.work-row:hover .work-arrow,
+.work-row:focus-visible .work-arrow {
   opacity: 1;
   transform: translate(0, 0);
 }
@@ -1008,27 +1131,141 @@ html[data-theme="dark"] .ctrl-dot {
   100% { transform: scale(1.7); opacity: 0; }
 }
 
-/* --- Manifesto (scroll statements) ----------------------------------------- */
+/* --- Manifesto (pinned scroll-scrub crescendo) ----------------------------- */
+/* A tall scroll track: the stage pins for its whole height while WarpDriver
+   scrubs warp intensity and swaps the active statement by scroll progress. */
 .manifesto {
+  position: relative;
+  /* ~0.55 viewport of scrub per statement + the pinned stage's own viewport,
+     so 4 statements ≈ 3.2 screens (tighter than a full screen each). */
+  height: calc(var(--stmts, 4) * 55vh + 100vh);
+}
+
+.manifesto-stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: grid;
+  place-items: center;
   max-width: var(--maxw);
   margin: 0 auto;
   padding: clamp(70px, 14vh, 180px) clamp(18px, 4vw, 46px);
-  display: grid;
-  justify-items: center;
-  gap: clamp(72px, 24vh, 280px);
-  text-align: center;
 }
 
+/* Statements share one grid cell and cross-fade; only .is-active is shown. */
 .manifesto-line {
+  grid-area: 1 / 1;
   margin: 0;
   display: grid;
   gap: .04em;
   max-width: 18ch;
+  justify-self: center;
+  text-align: center;
   font-family: var(--font-display);
   font-weight: 500;
   font-size: clamp(34px, 7vw, 100px);
   line-height: .98;
   letter-spacing: var(--tracking-display);
+  text-wrap: balance;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 700ms var(--ease);
+}
+
+.manifesto-line.is-active {
+  opacity: 1;
+}
+
+/* Split-text: each line is a clip mask; the inner span rises from behind it when
+   its statement activates, staggered by --li. `clip` (not `hidden`) avoids making
+   a scroll container; the bottom padding keeps glyph descenders un-clipped. */
+.manifesto-line .m-line {
+  display: block;
+  overflow: clip;
+  padding-bottom: .14em;
+  margin-bottom: -.14em;
+}
+
+.manifesto-line .m-line > span {
+  display: block;
+  transform: translateY(116%);
+  will-change: transform;
+}
+
+.manifesto-line.is-active .m-line > span {
+  transform: translateY(0);
+  transition: transform 950ms var(--ease) calc(var(--li, 0) * 120ms);
+}
+
+/* Static fallback — no pin/scrub on mobile, coarse pointers, or reduced motion;
+   statements simply stack and show (mirrors WarpDriver's own guard). */
+@media (max-width: 760px), (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .manifesto {
+    height: auto;
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: clamp(70px, 14vh, 180px) clamp(18px, 4vw, 46px);
+  }
+  .manifesto-stage {
+    position: static;
+    height: auto;
+    max-width: none;
+    padding: 0;
+    gap: clamp(72px, 18vh, 200px);
+    justify-items: center;
+  }
+  .manifesto-line {
+    grid-area: auto;
+    opacity: 1;
+    transition: none;
+  }
+  .manifesto-line .m-line > span { transform: none; }
+}
+
+/* --- Closing crescendo (glass sign-off + contact invite) ------------------- */
+.closing {
+  position: relative;
+  min-height: 100dvh;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 14vh clamp(18px, 4vw, 46px) 13vh;
+  overflow: hidden;
+}
+
+.closing-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.closing-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: clamp(16px, 2.4vh, 26px);
+}
+
+.closing-eyebrow {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: clamp(12px, 1.1vw, 14px);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.closing-title {
+  margin: 0;
+  max-width: 18ch;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(28px, 4.6vw, 60px);
+  line-height: 1.04;
+  letter-spacing: var(--tracking-snug);
   text-wrap: balance;
 }
 
@@ -1302,6 +1539,20 @@ html[data-theme="dark"] .ctrl-dot {
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Route transition ------------------------------------------------------ */
+/* The page content is keyed by route in Shell, so each navigation remounts this
+   frame and plays the enter. Ends at transform:none so no containing block lingers. */
+@media (prefers-reduced-motion: no-preference) {
+  .route-frame {
+    animation: routeIn 540ms var(--ease) both;
+  }
+}
+
+@keyframes routeIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
 }
 
 /* --- Mobile menu ----------------------------------------------------------- */

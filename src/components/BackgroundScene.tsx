@@ -168,6 +168,58 @@ function Caustics() {
   );
 }
 
+// --- Tunnel rings (the warp throat that forms at peak intensity) -----------
+const RING_COUNT = 9;
+const RING_GAP = DEPTH / RING_COUNT;
+
+function Rings() {
+  const group = useRef<THREE.Group>(null);
+  const meshes = useRef<(THREE.Mesh | null)[]>([]);
+  const zs = useMemo(() => Array.from({ length: RING_COUNT }, (_, i) => -i * RING_GAP), []);
+
+  useFrame((_, delta) => {
+    const g = group.current;
+    if (!g) return;
+    const intensity = warp.value;
+    // Rings only appear once the warp is well underway.
+    if (intensity < 0.12) {
+      if (g.visible) g.visible = false;
+      return;
+    }
+    g.visible = true;
+    const dt = Math.min(delta, 0.05);
+    for (let i = 0; i < RING_COUNT; i++) {
+      const m = meshes.current[i];
+      if (!m) continue;
+      zs[i] += dt * (3 + intensity * 20);
+      if (zs[i] > 6.5) zs[i] -= DEPTH;
+      m.position.z = zs[i];
+      // Fade in around mid-depth, out as rings reach the camera or the far plane.
+      const depthFade = Math.max(0, 1 - Math.abs(zs[i] + 9) / 22);
+      (m.material as THREE.MeshBasicMaterial).opacity = intensity * 0.6 * depthFade;
+    }
+  });
+
+  return (
+    <group ref={group}>
+      {zs.map((_, i) => (
+        <mesh key={i} ref={(el) => { meshes.current[i] = el; }}>
+          <ringGeometry args={[2.4, 2.46, 80]} />
+          <meshBasicMaterial
+            color="#e9ff66"
+            transparent
+            opacity={0}
+            side={THREE.DoubleSide}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 export default function BackgroundScene() {
   const [enabled, setEnabled] = useState(false);
 
@@ -190,6 +242,7 @@ export default function BackgroundScene() {
       >
         <Caustics />
         <Streaks />
+        <Rings />
       </Canvas>
     </div>
   );

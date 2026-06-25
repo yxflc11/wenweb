@@ -4,6 +4,7 @@ import Hero from "@/components/Hero";
 import Work from "@/components/Work";
 import About from "@/components/About";
 import Manifesto from "@/components/Manifesto";
+import Closing from "@/components/Closing";
 
 export default function HomePage() {
   return (
@@ -12,6 +13,7 @@ export default function HomePage() {
       <Work />
       <About />
       <Manifesto />
+      <Closing />
     </main>
   );
 }

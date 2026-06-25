@@ -17,6 +17,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useSound } from "@/hooks/useSound";
 import { useLenis, scrollTo } from "@/hooks/useLenis";
 import { useReveal } from "@/hooks/useReveal";
+import { useMagnetic } from "@/hooks/useMagnetic";
 
 // 3D project hover preview — client only, heavy three.js chunk.
 const ThreePreview = dynamic(() => import("./ThreePreview"), { ssr: false });
@@ -35,6 +36,7 @@ export default function Shell({ children }: { children: ReactNode }) {
 
   useLenis(!onKeystatic);
   useReveal(pathname);
+  useMagnetic(pathname);
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
@@ -119,7 +121,11 @@ export default function Shell({ children }: { children: ReactNode }) {
         <Header />
         <Readout />
         <ScrollRail />
-        {children}
+        {/* Keyed by route so each navigation remounts and plays the enter
+            transition (gated to no-reduced-motion in CSS). */}
+        <div className="route-frame" key={pathname}>
+          {children}
+        </div>
         <Footer />
         <ThreePreview />
         <MobileMenu />

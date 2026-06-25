@@ -22,31 +22,39 @@ async function loadFont(url: string): Promise<opentype.Font> {
 
 export async function buildCursiveGeometry(
   url: string,
+  // May contain "\n" for stacked lines; each line is centred horizontally.
   word: string,
   reduced: boolean
 ): Promise<THREE.ExtrudeGeometry> {
   const font = await loadFont(url);
   const unit = 100;
-  const path = font.getPath(word, 0, 0, unit);
+  const lines = word.split("\n");
+  const lineHeight = unit * 1.32;
 
   const shapePath = new THREE.ShapePath();
-  for (const cmd of path.commands) {
-    switch (cmd.type) {
-      case "M":
-        shapePath.moveTo(cmd.x, cmd.y);
-        break;
-      case "L":
-        shapePath.lineTo(cmd.x, cmd.y);
-        break;
-      case "Q":
-        shapePath.quadraticCurveTo(cmd.x1, cmd.y1, cmd.x, cmd.y);
-        break;
-      case "C":
-        shapePath.bezierCurveTo(cmd.x1, cmd.y1, cmd.x2, cmd.y2, cmd.x, cmd.y);
-        break;
-      // 'Z' closes the current sub-path automatically.
+  lines.forEach((line, i) => {
+    // Centre each line on x=0 and stack downward (font coords are y-down; the
+    // whole geometry is flipped upright afterwards).
+    const advance = font.getAdvanceWidth(line, unit);
+    const path = font.getPath(line, -advance / 2, i * lineHeight, unit);
+    for (const cmd of path.commands) {
+      switch (cmd.type) {
+        case "M":
+          shapePath.moveTo(cmd.x, cmd.y);
+          break;
+        case "L":
+          shapePath.lineTo(cmd.x, cmd.y);
+          break;
+        case "Q":
+          shapePath.quadraticCurveTo(cmd.x1, cmd.y1, cmd.x, cmd.y);
+          break;
+        case "C":
+          shapePath.bezierCurveTo(cmd.x1, cmd.y1, cmd.x2, cmd.y2, cmd.x, cmd.y);
+          break;
+        // 'Z' closes the current sub-path automatically.
+      }
     }
-  }
+  });
 
   const shapes = shapePath.toShapes(true);
 
@@ -55,8 +63,8 @@ export async function buildCursiveGeometry(
     bevelEnabled: true,
     bevelThickness: unit * 0.018,
     bevelSize: unit * 0.012,
-    bevelSegments: reduced ? 2 : 5,
-    curveSegments: reduced ? 6 : 14
+    bevelSegments: reduced ? 2 : 4,
+    curveSegments: reduced ? 6 : 11
   });
 
   // Font coords are y-down; flip to upright, then centre and normalise height.

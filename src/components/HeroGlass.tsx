@@ -12,7 +12,8 @@ import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import * as THREE from "three";
 import { buildCursiveGeometry } from "./cursiveGeometry";
 
-// Connected handwriting font extruded into liquid glass (Apple-style "hello").
+// Connected handwriting font extruded into liquid glass; renders stacked,
+// centred cursive lines (e.g. "Before / The Leap.").
 const FONT = "/fonts/DancingScript.ttf";
 
 type PointerRef = React.RefObject<{ x: number; y: number }>;
@@ -20,11 +21,15 @@ type PointerRef = React.RefObject<{ x: number; y: number }>;
 function Hello({
   reduced,
   pointer,
-  scale
+  scale,
+  word,
+  centerY
 }: {
   reduced: boolean;
   pointer: PointerRef;
   scale: number;
+  word: string;
+  centerY: number;
 }) {
   const group = useRef<THREE.Group>(null);
   const [geo, setGeo] = useState<THREE.ExtrudeGeometry | null>(null);
@@ -32,7 +37,7 @@ function Hello({
   useEffect(() => {
     let alive = true;
     let built: THREE.ExtrudeGeometry | null = null;
-    buildCursiveGeometry(FONT, "hello", reduced)
+    buildCursiveGeometry(FONT, word, reduced)
       .then((g) => {
         if (alive) {
           built = g;
@@ -46,7 +51,7 @@ function Hello({
       alive = false;
       if (built) built.dispose();
     };
-  }, [reduced]);
+  }, [reduced, word]);
 
   useFrame((state) => {
     if (!group.current) return;
@@ -54,29 +59,29 @@ function Hello({
     // Ease the wordmark toward the cursor for a subtle parallax tilt.
     group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, p.x * 0.45, 0.05);
     group.current.rotation.x = THREE.MathUtils.lerp(group.current.rotation.x, -p.y * 0.28, 0.05);
-    // Sits slightly above centre (leaving room for the copy) and breathes.
-    group.current.position.y = 0.85 + Math.sin(state.clock.elapsedTime * 0.8) * 0.05;
+    // Breathes around its anchor height (hero sits above centre; closing centres).
+    group.current.position.y = centerY + Math.sin(state.clock.elapsedTime * 0.8) * 0.05;
   });
 
   return (
     <Float speed={1.6} rotationIntensity={0.18} floatIntensity={0.5}>
-      <group ref={group} position={[0, 0.85, 0]} scale={scale}>
+      <group ref={group} position={[0, centerY, 0]} scale={scale}>
         {geo && (
           <mesh geometry={geo}>
             <MeshTransmissionMaterial
               backside
               backsideThickness={0.6}
               thickness={0.5}
-              samples={reduced ? 3 : 8}
-              resolution={reduced ? 128 : 320}
+              samples={reduced ? 4 : 6}
+              resolution={reduced ? 160 : 256}
               transmission={1}
               roughness={0.03}
               ior={1.43}
-              chromaticAberration={0.5}
+              chromaticAberration={reduced ? 0.1 : 0.5}
               anisotropy={0.3}
-              distortion={0.4}
+              distortion={reduced ? 0.06 : 0.4}
               distortionScale={0.35}
-              temporalDistortion={0.15}
+              temporalDistortion={reduced ? 0 : 0.15}
               clearcoat={1}
               clearcoatRoughness={0.05}
               attenuationDistance={2.5}
@@ -119,7 +124,17 @@ function fitScale(w: number) {
   return 1;
 }
 
-export default function HeroGlass({ reduced = false }: { reduced?: boolean }) {
+export default function HeroGlass({
+  reduced = false,
+  word = "Before\nThe Leap.",
+  anchor = ".hero",
+  centerY = 0.85
+}: {
+  reduced?: boolean;
+  word?: string;
+  anchor?: string;
+  centerY?: number;
+}) {
   const pointer = useRef({ x: 0, y: 0 });
   const [ready, setReady] = useState(false);
   const [scale, setScale] = useState(1);
@@ -139,13 +154,13 @@ export default function HeroGlass({ reduced = false }: { reduced?: boolean }) {
     window.addEventListener("pointermove", onMove, { passive: true });
     window.addEventListener("resize", onResize);
 
-    const hero = document.querySelector(".hero");
+    const host = document.querySelector(anchor);
     let io: IntersectionObserver | undefined;
-    if (hero) {
+    if (host) {
       io = new IntersectionObserver(([e]) => setActive(e.isIntersecting), {
         rootMargin: "150px"
       });
-      io.observe(hero);
+      io.observe(host);
     }
     return () => {
       window.removeEventListener("pointermove", onMove);
@@ -162,13 +177,13 @@ export default function HeroGlass({ reduced = false }: { reduced?: boolean }) {
       style={{ pointerEvents: "none" }}
       frameloop={active ? "always" : "never"}
       camera={{ position: [0, 0, 9], fov: 34 }}
-      dpr={reduced ? [1, 1.5] : [1, 2]}
+      dpr={reduced ? [1, 1.5] : [1, 1.75]}
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
     >
       <ambientLight intensity={0.5} />
       <directionalLight position={[5, 6, 4]} intensity={1.2} />
       <Suspense fallback={null}>
-        <Hello reduced={reduced} pointer={pointer} scale={scale} />
+        <Hello reduced={reduced} pointer={pointer} scale={scale} word={word} centerY={centerY} />
         <Lights />
       </Suspense>
       {!reduced && (
