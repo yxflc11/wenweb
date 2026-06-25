@@ -1,0 +1,32 @@
+---
+title: AICA 2026
+year: "2026"
+category: AI Content System
+role: System design · build
+date: "2026-05-20"
+summary: An end-to-end content system that turns one operator's judgement into a repeatable publishing engine.
+link: ""
+---
+AICA is the content system I run my own publishing on. The premise is simple: the parts of content work that are repeatable — research capture, drafting scaffolds, formatting, scheduling — should be handled by a system, so the only thing left for a human is the part that needs taste and judgement.
+
+## The problem
+
+Publishing consistently as one person fails in a predictable way: every post starts from a blank page, and the manual surface area is enormous. By the third week the cadence collapses. The bottleneck is never ideas — it's the repeated setup cost around each idea.
+
+## How it works
+
+The system is three layers that hand off to each other:
+
+- **Capture** — everything I read or decide lands in one structured inbox, so a draft never starts empty.
+- **Compose** — prompt scaffolds turn a captured argument into a shaped first draft that already matches the format it's going to ship in.
+- **Distribute** — formatting, metadata, and scheduling are automated, so "publish" is one step instead of ten.
+
+```
+capture → compose → distribute
+   ▲                     │
+   └──────── compounds ──┘
+```
+
+## Result
+
+The manual surface area per post dropped to the one decision that matters — *is this true, and is it said clearly.* Everything around that is now a system, and each run makes the next one faster.

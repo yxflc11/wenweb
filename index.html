@@ -3,27 +3,60 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#e8e8e3" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0e0e0d" media="(prefers-color-scheme: dark)" />
+
+    <title>Bingwen He — Design & Engineering</title>
     <meta
       name="description"
-      content="Bingwen He portfolio archive for software, AI automation, full-stack learning, and content system design."
+      content="Bingwen He — design engineer working on AI automation and prompt systems. Thinking in systems, building toward a one-person company. Profile and writing."
     />
-    <title>Bingwen He / Portfolio Archive</title>
+    <link rel="canonical" href="https://bingwenhe.com/" />
+
+    <!-- Open Graph / social -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Bingwen He — Design & Engineering" />
+    <meta
+      property="og:description"
+      content="Design engineer working on AI automation and prompt systems. Thinking in systems, building with care."
+    />
+    <meta property="og:url" content="https://bingwenhe.com/" />
+    <meta property="og:image" content="https://bingwenhe.com/concepts/portfolio-concept.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Bingwen He — Design & Engineering" />
+    <meta
+      name="twitter:description"
+      content="Design engineer working on AI automation and prompt systems."
+    />
+    <meta name="twitter:image" content="https://bingwenhe.com/concepts/portfolio-concept.png" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Space+Grotesk:wght@300..700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Space+Grotesk:wght@300..700&family=Space+Mono:wght@400;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./src/styles.css" />
+    <script>
+      // Set the theme before first paint to avoid a flash of the wrong palette.
+      (function () {
+        try {
+          var saved = localStorage.getItem("bw-theme");
+          var theme =
+            saved === "light" || saved === "dark"
+              ? saved
+              : window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+          document.documentElement.dataset.theme = theme;
+        } catch (e) {
+          document.documentElement.dataset.theme = "light";
+        }
+      })();
+    </script>
   </head>
   <body>
-    <div class="intro" id="intro" aria-hidden="true">
-      <div class="intro-inner">
-        <span class="intro-name">BINGWEN HE</span>
-        <span class="intro-count">00</span>
-      </div>
-    </div>
     <div id="root"></div>
-    <script type="module" src="./src/main.js"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -10,3 +10,12 @@
 node_modules/
 npm-debug.log*
 *.log
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Next.js
+.next/
+next-env.d.ts
+.vercel
