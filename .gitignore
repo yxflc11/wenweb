@@ -19,3 +19,6 @@ dist/
 .next/
 next-env.d.ts
 .vercel
+
+# Local-only proprietary test font (see README → "Glass-title font")
+public/fonts/test-rounded.ttf
