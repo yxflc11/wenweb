@@ -1,0 +1,276 @@
+name: Verify and publish container
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: wenweb-production
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+  IMAGE_TAG: sha-${{ github.sha }}
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+
+      - name: Build public static export
+        run: npm run build:static
+
+      - name: Verify public route boundary
+        run: |
+          test -d out
+          test -f out/healthz
+          test ! -e out/keystatic
+          test ! -e out/api/keystatic
+          if find out -iname '*keystatic*' -print -quit | grep -q .; then
+            echo 'Keystatic artifacts must not exist in the public export.' >&2
+            exit 1
+          fi
+
+  container-smoke:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Build production container
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: wenweb:ci
+          provenance: false
+          sbom: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Verify non-root runtime and public routes
+        run: |
+          runtime_user=$(docker image inspect wenweb:ci --format '{{.Config.User}}')
+          [[ -n "${runtime_user}" && "${runtime_user}" != root && "${runtime_user}" != 0 ]]
+
+          docker run --detach --name wenweb-ci --publish 127.0.0.1:18080:8080 wenweb:ci
+          trap 'docker rm --force wenweb-ci >/dev/null 2>&1 || true' EXIT
+
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:18080/healthz >/dev/null; then
+              break
+            fi
+            if [[ "${attempt}" == 20 ]]; then
+              docker logs wenweb-ci >&2
+              exit 1
+            fi
+            sleep 1
+          done
+
+          curl --fail --silent http://127.0.0.1:18080/ >/dev/null
+          curl --fail --silent http://127.0.0.1:18080/blog >/dev/null
+          status=$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:18080/keystatic)
+          [[ "${status}" == 404 ]]
+
+  publish:
+    if: github.event_name != 'pull_request'
+    needs: container-smoke
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Refuse to overwrite an existing commit tag
+        run: |
+          if docker buildx imagetools inspect "${IMAGE}:${IMAGE_TAG}" >/dev/null 2>&1; then
+            echo "Refusing to overwrite existing tag ${IMAGE}:${IMAGE_TAG}" >&2
+            exit 1
+          fi
+
+      - name: Build and push immutable commit image
+        id: build
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          provenance: mode=max
+          sbom: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Write build manifest
+        run: |
+          jq -n \
+            --arg commit "${GITHUB_SHA}" \
+            --arg image_tag "${IMAGE_TAG}" \
+            --arg image_digest "${{ steps.build.outputs.digest }}" \
+            --arg built_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{commit:$commit,image_tag:$image_tag,image_digest:$image_digest,built_at:$built_at}' \
+            > release-manifest.json
+
+      - name: Upload build manifest
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: wenweb-${{ github.sha }}-build-manifest
+          path: release-manifest.json
+          if-no-files-found: error
+
+  deploy:
+    if: github.event_name != 'pull_request' && vars.COOLIFY_DEPLOY_ENABLED == 'true'
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    environment: production
+    env:
+      COOLIFY_URL: ${{ vars.COOLIFY_URL }}
+      COOLIFY_APP_UUID: ${{ vars.COOLIFY_APP_UUID }}
+      COOLIFY_RESOURCE_UUID: ${{ vars.COOLIFY_RESOURCE_UUID }}
+      SMOKE_URL: ${{ vars.COOLIFY_SMOKE_URL }}
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+      TARGET_DIGEST: ${{ needs.publish.outputs.digest }}
+    steps:
+      - name: Validate deployment configuration
+        env:
+          COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          test -n "${COOLIFY_URL}"
+          test -n "${COOLIFY_APP_UUID}"
+          test -n "${COOLIFY_RESOURCE_UUID}"
+          test -n "${SMOKE_URL}"
+          test -n "${DEPLOY_HOST}"
+          test -n "${COOLIFY_API_TOKEN}"
+          test -n "${DEPLOY_SSH_KEY}"
+          test -n "${DEPLOY_KNOWN_HOSTS}"
+          [[ "${GITHUB_SHA}" =~ ^[0-9a-f]{40}$ ]]
+          [[ "${TARGET_DIGEST}" =~ ^sha256:[0-9a-f]{64}$ ]]
+
+      - name: Configure restricted deploy SSH key
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${DEPLOY_SSH_KEY}" > ~/.ssh/id_ed25519
+          printf '%s\n' "${DEPLOY_KNOWN_HOSTS}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+
+      - name: Run server preflight
+        run: ssh -o BatchMode=yes -o IdentitiesOnly=yes deploy@"${DEPLOY_HOST}" "wenweb preflight ${GITHUB_SHA}"
+
+      - name: Update Coolify image tag
+        env:
+          COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+        run: |
+          response_code=$(curl --silent --show-error --output patch-response.json --write-out '%{http_code}' \
+            --request PATCH "${COOLIFY_URL}/api/v1/applications/${COOLIFY_APP_UUID}" \
+            --header "Authorization: Bearer ${COOLIFY_API_TOKEN}" \
+            --header 'Content-Type: application/json' \
+            --data "$(jq -nc --arg tag "${IMAGE_TAG}" '{docker_registry_image_tag:$tag}')")
+          [[ "${response_code}" == 2* ]] || { cat patch-response.json >&2; exit 1; }
+
+      - name: Trigger Coolify deployment
+        id: deploy
+        env:
+          COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+        run: |
+          response_code=$(curl --silent --show-error --output deploy-response.json --write-out '%{http_code}' \
+            --request POST "${COOLIFY_URL}/api/v1/deploy" \
+            --header "Authorization: Bearer ${COOLIFY_API_TOKEN}" \
+            --header 'Content-Type: application/json' \
+            --data "$(jq -nc --arg uuid "${COOLIFY_RESOURCE_UUID}" '{uuid:$uuid,force:false}')")
+          [[ "${response_code}" == 2* ]] || { cat deploy-response.json >&2; exit 1; }
+          deployment_uuid=$(jq -er '.deployment_uuid // .deployments[0].deployment_uuid' deploy-response.json)
+          echo "deployment_uuid=${deployment_uuid}" >> "${GITHUB_OUTPUT}"
+
+      - name: Wait for explicit deployment success
+        env:
+          COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+          DEPLOYMENT_UUID: ${{ steps.deploy.outputs.deployment_uuid }}
+        run: |
+          for attempt in $(seq 1 60); do
+            curl --silent --show-error --fail \
+              --header "Authorization: Bearer ${COOLIFY_API_TOKEN}" \
+              "${COOLIFY_URL}/api/v1/deployments/${DEPLOYMENT_UUID}" > deployment-status.json
+            status=$(jq -r '.status // empty' deployment-status.json)
+            case "${status}" in
+              finished) exit 0 ;;
+              failed|cancelled) cat deployment-status.json >&2; exit 1 ;;
+            esac
+            sleep 10
+          done
+          echo 'Timed out waiting for an explicit finished status.' >&2
+          exit 1
+
+      - name: Run public smoke test
+        run: curl --fail --silent --show-error --location --retry 5 --retry-delay 5 "${SMOKE_URL}"
+
+      - name: Verify running image digest
+        run: ssh -o BatchMode=yes -o IdentitiesOnly=yes deploy@"${DEPLOY_HOST}" "wenweb verify ${GITHUB_SHA} ${TARGET_DIGEST}"
+
+      - name: Write deployment manifest
+        run: |
+          jq -n \
+            --arg commit "${GITHUB_SHA}" \
+            --arg image_tag "${IMAGE_TAG}" \
+            --arg image_digest "${TARGET_DIGEST}" \
+            --arg resource_uuid "${COOLIFY_RESOURCE_UUID}" \
+            --arg deployment_uuid "${{ steps.deploy.outputs.deployment_uuid }}" \
+            --arg deployed_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{commit:$commit,image_tag:$image_tag,image_digest:$image_digest,resource_uuid:$resource_uuid,deployment_uuid:$deployment_uuid,migration_version:null,deployed_at:$deployed_at}' \
+            > release-manifest.json
+
+      - name: Upload deployment manifest
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: wenweb-${{ github.sha }}-deployment-manifest
+          path: release-manifest.json
+          if-no-files-found: error

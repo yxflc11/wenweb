@@ -13,6 +13,8 @@ npm-debug.log*
 
 # Build output
 dist/
+out/
+.static-build/
 *.tsbuildinfo
 
 # Next.js
