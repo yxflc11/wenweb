@@ -26,7 +26,7 @@ const mono = localFont({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://bingwenhe.com"),
+  metadataBase: new URL("https://wenweb.net"),
   title: {
     default: "Bingwen He — Design & Engineering",
     template: "%s — Bingwen He"

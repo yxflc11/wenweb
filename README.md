@@ -53,6 +53,7 @@ fonts are intentionally not committed.)
 npm install
 npm run dev     # http://127.0.0.1:4173   (and /keystatic for the CMS)
 npm run build   # type-check + static/SSG
+npm run build:static # public export in out/; excludes Keystatic routes
 npm run start   # serve the production build
 ```
 
@@ -77,29 +78,35 @@ In dev (`storage: { kind: "local" }` in `keystatic.config.ts`) the CMS edits
 these files directly — write a post, save, commit, push. The site reads them at
 build time via Keystatic's reader, so they're statically generated.
 
-**To edit on the live site** (not just locally), switch `keystatic.config.ts` to
-GitHub mode and add the secrets yourself:
+The production image intentionally contains neither `/keystatic` nor
+`/api/keystatic`. Author content locally, commit it, and let CI rebuild the
+static site. A future authenticated CMS would be a separate deployment decision
+rather than an accidental public route.
 
-```ts
-storage: { kind: "github", repo: "yxflc11/wenweb" }
-```
+## Production deployment
 
-then create a Keystatic GitHub app and set `KEYSTATIC_GITHUB_CLIENT_ID`,
-`KEYSTATIC_GITHUB_CLIENT_SECRET`, `KEYSTATIC_SECRET` in Vercel. (Account/app
-creation and secrets are yours to configure — see keystatic.com/docs.)
+Production is an immutable static container rather than a long-running Next.js
+server:
 
-## Deploy to Vercel
+1. `npm run build:static` copies the project to an isolated build directory,
+   removes the development-only Keystatic routes, and exports `out/`.
+2. The multi-stage `Dockerfile` packages `out/` in unprivileged NGINX on port
+   `8080`; both base images are pinned by digest.
+3. GitHub Actions verifies the export and dependency audit, then publishes
+   `ghcr.io/yxflc11/wenweb:sha-<40-character-commit>` with SBOM and provenance.
+4. Coolify deployment is gated by `COOLIFY_DEPLOY_ENABLED=true`, uses the
+   Coolify API to select that exact tag, waits for explicit success, performs a
+   public health check, and verifies the running Registry digest through a
+   restricted SSH command.
 
-1. Push to a GitHub repo (e.g. `github.com/yxflc11/wenweb`).
-2. [vercel.com/new](https://vercel.com/new) → Import the repo. Next.js is
-   auto-detected; no config needed. Deploy.
-3. Fonts are self-hosted, so the build is deterministic.
+The public health endpoint is `/healthz`. `wenweb.net` is canonical;
+`www.wenweb.net` is redirected by the reverse proxy.
 
 **Before/after launch**
-- Update the domain in `src/app/layout.tsx` (`metadataBase`, OG URLs) once known.
+- Canonical metadata is fixed to `https://wenweb.net` in `src/app/layout.tsx`.
 - Contact form posts to Formspree (`src/data.ts → formEndpoint`) — swap for your
   own API route later if you build a custom inbox.
-- Live `/keystatic` editing needs GitHub mode (above); until then edit in dev.
+- Keystatic editing remains local-only; production is a static export.
 
 ## Performance & accessibility
 
