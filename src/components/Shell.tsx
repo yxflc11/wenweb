@@ -35,9 +35,12 @@ export default function Shell({ children }: { children: ReactNode }) {
   const onKeystatic = pathname?.startsWith("/keystatic") ?? false;
   // Preview routes are intentionally art-directed as standalone surfaces. Keep
   // the production portfolio chrome and WebGL layers out of the whole namespace.
-  const onStandalonePreview = pathname?.startsWith("/preview/") ?? false;
+  const onLegacyHomePreview = pathname === "/preview/legacy-home";
+  const onStandaloneSurface =
+    pathname === "/" ||
+    ((pathname?.startsWith("/preview/") ?? false) && !onLegacyHomePreview);
 
-  useLenis(!onKeystatic && !onStandalonePreview);
+  useLenis(!onKeystatic && !onStandaloneSurface);
   useReveal(pathname);
   useMagnetic(pathname);
 
@@ -108,7 +111,7 @@ export default function Shell({ children }: { children: ReactNode }) {
   };
 
   // Keystatic admin: render it bare, without the portfolio chrome.
-  if (onKeystatic || onStandalonePreview) return <>{children}</>;
+  if (onKeystatic || onStandaloneSurface) return <>{children}</>;
 
   return (
     <PreviewProvider>

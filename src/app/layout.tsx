@@ -28,23 +28,23 @@ const mono = localFont({
 export const metadata: Metadata = {
   metadataBase: new URL("https://wenweb.net"),
   title: {
-    default: "Bingwen He — Design & Engineering",
-    template: "%s — Bingwen He"
+    default: "WENWEB — AI Systems & Automation",
+    template: "%s — WENWEB"
   },
   description:
-    "Bingwen He — design engineer working on AI automation and prompt systems. Thinking in systems, building toward a one-person company. Profile and writing.",
+    "AI automation, prompt systems, agent integration, knowledge architecture, and one-person company operations.",
   openGraph: {
     type: "website",
-    title: "Bingwen He — Design & Engineering",
+    title: "WENWEB — AI Systems & Automation",
     description:
-      "Design engineer working on AI automation and prompt systems. Thinking in systems, building with care.",
+      "AI automation, prompt systems, agent integration, knowledge architecture, and one-person company operations.",
     url: "/",
     images: ["/assets/aica-2026.png"]
   },
   twitter: {
     card: "summary_large_image",
-    title: "Bingwen He — Design & Engineering",
-    description: "Design engineer working on AI automation and prompt systems."
+    title: "WENWEB — AI Systems & Automation",
+    description: "AI automation, prompt systems, and one-person company operations."
   },
   icons: { icon: "/favicon.svg" }
 };
