@@ -1,0 +1,243 @@
+.header,
+.hero {
+  color: var(--oil-ink);
+  font-family: "Helvetica Neue", -apple-system, BlinkMacSystemFont, "PingFang SC",
+    "Noto Sans SC", sans-serif;
+}
+
+.header {
+  padding-top: 34px;
+}
+
+.headerInner,
+.heroFrame {
+  width: 100%;
+}
+
+.headerInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  line-height: 1;
+  letter-spacing: 0.14em;
+}
+
+.brand,
+.github {
+  display: inline-flex;
+  align-items: center;
+}
+
+.brand {
+  gap: 9px;
+}
+
+.statusDot {
+  width: 7px;
+  height: 7px;
+  border: 1.5px solid var(--oil-ink);
+  border-radius: 50%;
+  background: var(--wen-acid);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--oil-surface) 72%, transparent);
+}
+
+.github {
+  gap: 7px;
+  color: var(--oil-t2);
+  text-decoration: none;
+  transition: color 180ms ease;
+}
+
+.github svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+
+.github:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: 5px;
+}
+
+.hero {
+  min-height: 86vh;
+  overflow: hidden;
+}
+
+.heroFrame {
+  position: relative;
+  display: flex;
+  min-height: 86vh;
+  align-items: center;
+}
+
+.composition {
+  width: 100%;
+  transform: translateY(1.5vh);
+}
+
+.title {
+  position: relative;
+  z-index: 0;
+  margin: 0;
+  font-size: clamp(68px, 7.8vw, 96px);
+  font-weight: 700;
+  line-height: 0.9;
+  letter-spacing: -0.058em;
+}
+
+.titleLine {
+  position: relative;
+  z-index: 1;
+  display: block;
+  animation: rise-in 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.titleLine:nth-child(2) {
+  animation-delay: 70ms;
+}
+
+.titleLine:nth-child(3) {
+  animation-delay: 140ms;
+}
+
+.brandLine {
+  font-size: 1.34em;
+  letter-spacing: -0.065em;
+}
+
+.title sup {
+  display: inline-block;
+  margin-left: 0.18em;
+  font-size: 0.14em;
+  font-weight: 400;
+  letter-spacing: 0;
+  vertical-align: top;
+  transform: translateY(0.6em);
+}
+
+.meta {
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+  margin-top: 40px;
+  white-space: nowrap;
+}
+
+.name {
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: 0.09em;
+}
+
+.roles {
+  color: var(--oil-t3);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+}
+
+.scrollCue {
+  position: absolute;
+  bottom: 5vh;
+  left: 0;
+  color: var(--oil-t3);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.3em;
+}
+
+@media (hover: hover) {
+  .github:hover {
+    color: var(--oil-ink);
+  }
+}
+
+@media (max-width: 560px) {
+  .header {
+    padding-top: 22px;
+  }
+
+  .headerInner,
+  .heroFrame {
+    width: 100%;
+  }
+
+  .headerInner {
+    font-size: 11px;
+  }
+
+  .brand {
+    gap: 7px;
+  }
+
+  .github {
+    gap: 5px;
+    letter-spacing: 0.08em;
+  }
+
+  .github svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .hero,
+  .heroFrame {
+    min-height: 74svh;
+  }
+
+  .composition {
+    transform: translateY(6px);
+  }
+
+  .title {
+    font-size: clamp(42px, 12vw, 50px);
+    letter-spacing: -0.06em;
+  }
+
+  .brandLine {
+    font-size: 1.46em;
+  }
+
+  .meta {
+    align-items: flex-start;
+    gap: 7px;
+    margin-top: 24px;
+    white-space: normal;
+    flex-direction: column;
+  }
+
+  .name {
+    font-size: 17px;
+  }
+
+  .roles {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+  }
+
+  .scrollCue {
+    bottom: 3vh;
+    font-size: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .titleLine {
+    animation: none;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    clip-path: inset(20% 0 0);
+    transform: translateY(26px);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0);
+    transform: translateY(0);
+  }
+}
