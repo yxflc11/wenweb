@@ -33,8 +33,11 @@ export default function Shell({ children }: { children: ReactNode }) {
   const pendingScroll = useRef<string | null>(null);
   // The Keystatic admin renders its own full-screen UI — skip our chrome/scroll.
   const onKeystatic = pathname?.startsWith("/keystatic") ?? false;
+  // Preview routes are intentionally art-directed as standalone surfaces. Keep
+  // the production portfolio chrome and WebGL layers out of the whole namespace.
+  const onStandalonePreview = pathname?.startsWith("/preview/") ?? false;
 
-  useLenis(!onKeystatic);
+  useLenis(!onKeystatic && !onStandalonePreview);
   useReveal(pathname);
   useMagnetic(pathname);
 
@@ -105,7 +108,7 @@ export default function Shell({ children }: { children: ReactNode }) {
   };
 
   // Keystatic admin: render it bare, without the portfolio chrome.
-  if (onKeystatic) return <>{children}</>;
+  if (onKeystatic || onStandalonePreview) return <>{children}</>;
 
   return (
     <PreviewProvider>
