@@ -1,118 +1,141 @@
-# Bingwen He — Personal site, writing & work
+# WENWEB
 
-A high-end personal site inspired by [haoqi.design](https://haoqi.design/) and
-Maxime Heckel's glass/WebGL work: a persistent morphing WebGL backdrop (caustic
-light field → warp tunnel), liquid-glass display titles, a blueprint grid
-overlay, a live technical readout (clock + weather + cursor coordinates),
-light/dark + sound toggles, an in-browser CMS, and separate writing & work
-sections. Both themes are calibrated and follow the system preference.
+WENWEB is a static-first portfolio and publishing system for presenting projects, technical writing, reusable AI workflows, and collaboration channels in one interface.
 
-## Motion & interaction
+WENWEB 是一个静态优先的作品与内容发布系统，用统一界面展示项目、技术文章、可复用 AI 工作流与协作入口。
 
-A restrained, haoqi-inspired motion layer — every effect has a static,
-WebGL-free fallback for reduced-motion and small / touch screens.
+![Desktop interface showing the WENWEB typographic hero and neutral grid system](public/readme/interface-desktop.jpg)
 
-- **Liquid-glass titles** — display type extruded to 3D and rendered as
-  transmission glass: the hero `BEFORE / THE LEAP` and closing `AFTER / THE SKY`
-  couplet. Lines are justified to aligned edges and lit as luminous light-blue.
-- **Warp crescendo** — the manifesto is a tall *pinned* section; scrolling
-  through it scrubs a WebGL warp tunnel (streaks + forming rings) from calm to
-  full and swaps the pinned statement band by band.
-- **Split-text** — manifesto lines rise from behind a clip mask, staggered.
-- **Sticker collage** — decorative SVG stickers (googly eyes, melty smiley,
-  starface, pixel cursor, brand stamp) frame the hero and closing.
-- **Acid category chips** on work rows, magnetic buttons, and smooth
-  route-change / sound polish.
+*Figure 1 / 图 1 — The desktop shell uses an editorial grid, oversized typography, and a restrained fluorescent accent. The layout is rendered from the running application, without a separate presentation mockup. 桌面首屏采用编辑式网格、超大字号与克制的荧光强调色；画面直接来自实际运行页面，而非独立演示稿。*
 
-## Stack
+## Technical profile / 技术概览
 
-- **Next.js 16 (App Router) + React 19 + TypeScript** — server components, SSG
-- **three.js · @react-three/fiber · drei · postprocessing** — glass titles,
-  caustic field, warp tunnel + rings, 3D project hover preview
-- **opentype.js** — extrudes a real font's outlines into the glass geometry
-- **Keystatic** — in-browser CMS (`/keystatic`); content is Markdoc `.mdoc`
-- **@markdoc/markdoc** — renders post/case-study bodies to the prose styles
-- **Lenis** — smooth inertia scrolling (native + reduced-motion fallbacks)
-- **next/font/local** — self-hosted Bricolage Grotesque · Space Grotesk · Space
-  Mono (the build never fetches Google Fonts)
+| Layer / 层级 | Implementation / 实现 |
+| --- | --- |
+| Application / 应用 | Next.js 16 App Router, React 19, TypeScript 6 |
+| Content / 内容 | Keystatic local authoring, Markdoc source files, static route generation |
+| Interaction / 交互 | Accessible tabs, keyboard navigation, reduced-motion support, responsive CSS |
+| Visual runtime / 视觉运行时 | CSS editorial grid for the primary surface; Three.js and React Three Fiber for selected legacy visual modules |
+| Delivery / 交付 | Static export, unprivileged NGINX container, immutable image tags, CI smoke tests |
 
-## Glass-title font
+The production homepage is deliberately lightweight: semantic React components, CSS-driven layout, locally served assets, and no client-side content API. Interactive categories share one content surface while preserving native links for published routes.
 
-The glass titles extrude a **rounded display font** through `opentype.js`. The
-repo ships only the cursive `public/fonts/DancingScript.ttf`, and
-`cursiveGeometry.ts` falls back to it when the configured font is missing — so a
-fresh checkout or deploy never breaks. To ship the bold block look, drop an
-OFL-licensed rounded font (Fredoka / Baloo / M PLUS Rounded / Quicksand Bold)
-into `public/fonts/` and point `FONT` in `src/components/HeroGlass.tsx` at it;
-the justified layout, sizing, and material all carry over. (Proprietary system
-fonts are intentionally not committed.)
+正式首页保持轻量：使用语义化 React 组件、CSS 布局与本地资源，不依赖客户端内容 API。多个内容分类共用同一展示区域，已发布内容仍保留原生链接行为。
 
-## Develop
+![Desktop content surface showing category tabs and responsive project cards](public/readme/content-system-desktop.jpg)
+
+*Figure 2 / 图 2 — Category state is exposed through ARIA tabs. Published cards remain navigable links, while draft cards are non-interactive and labeled as pending content. 分类状态通过 ARIA 标签页表达；已发布卡片保持可导航链接，草稿卡片不可交互并明确标记为待完善内容。*
+
+## Interface architecture / 界面架构
+
+The interface is organized into four independent runtime concerns:
+
+界面运行时拆分为四个互不耦合的关注点：
+
+- **Shell / 外壳** — metadata, route-aware chrome, focus handling, and global accessibility behavior.
+- **Content model / 内容模型** — route-private configuration for projects, skills, articles, profile blocks, and external channels.
+- **Presentation / 呈现** — reusable cards, tab panels, grid decoration, and responsive typography.
+- **Motion / 动效** — progressive enhancement with reduced-motion fallbacks; content remains usable when animation is unavailable.
+
+The root route renders the primary WEN surface without the older global canvas or navigation chrome. Long-form writing and case-study routes continue to use the existing reading shell, so the landing experience can evolve without destabilizing the publishing system.
+
+根路由直接渲染主要 WEN 界面，不挂载旧版全局画布与导航外壳。长文与案例详情继续使用既有阅读外壳，因此首页可以独立演进，而不会影响内容发布系统。
+
+## Responsive system / 响应式系统
+
+The mobile layout is not a scaled desktop canvas. Type sizes, card composition, tab spacing, metadata density, and viewport gutters are recalculated for narrow screens. The verified 390 px layout keeps the five primary tabs available, avoids horizontal overflow, and preserves readable card hierarchy.
+
+手机端不是桌面画面的等比缩小。字号、卡片结构、标签间距、元信息密度与视口留白都会针对窄屏重新计算。经过验证的 390 px 布局完整保留五个主要标签，无横向溢出，并维持清晰的卡片层级。
+
+![Mobile interface at 390 pixels showing the hero and full tab navigation](public/readme/interface-mobile.jpg)
+
+*Figure 3 / 图 3 — The 390 px capture verifies the production breakpoint: the headline reflows intentionally, navigation remains complete, and the content surface begins within the same viewport. 390 px 实际截图验证了生产断点：标题按设计换行、导航保持完整，首屏内即可看到内容区域起点。*
+
+## Content architecture / 内容架构
+
+Writing and work are separate file-backed collections:
+
+文章与项目采用两个独立的文件型内容集合：
+
+- `src/content/posts/*.mdoc` stores writing.
+- `src/content/work/*.mdoc` stores case studies.
+- `src/data.ts` provides shared navigation and contact data.
+- Route-private configuration provides the homepage content model and publication state.
+
+Keystatic is available only for local authoring. The public artifact excludes both the editing interface and its API routes. Content changes are reviewed as source changes, then compiled into static pages during CI.
+
+Keystatic 仅用于本地编辑。公开构建产物会移除编辑界面及对应 API 路由。内容修改以源码形式接受审查，并在 CI 中编译为静态页面。
+
+## Production boundary / 生产边界
+
+`npm run build:static` creates an isolated build workspace, copies only required application inputs, removes local-only authoring routes, enables the static export boundary, and publishes the generated `out/` directory.
+
+`npm run build:static` 会创建隔离构建目录，仅复制必要的应用输入，移除仅限本地使用的编辑路由，启用静态导出边界，并生成最终 `out/` 目录。
+
+The container uses a two-stage build:
+
+容器采用两阶段构建：
+
+1. Node.js 24 builds and verifies the static export.
+2. Unprivileged NGINX serves the artifact on port `8080` and checks `/healthz`.
+
+Both base images are digest-pinned. The runtime contains static files only, which reduces the public attack surface and removes production CMS credentials entirely.
+
+两个基础镜像均固定到摘要版本。运行容器只包含静态文件，从而缩小公开攻击面，并彻底避免在生产环境中携带 CMS 凭证。
+
+## CI and release integrity / CI 与发布完整性
+
+Pull requests run dependency installation, high-severity audit enforcement, static generation, route-boundary checks, and a non-root container smoke test. Main-branch releases publish an immutable commit-addressed image to GHCR with SBOM and provenance metadata. Optional deployment selects the exact image tag and validates both the public health endpoint and the running registry digest.
+
+Pull Request 会执行依赖安装、高危漏洞审计、静态生成、路由边界检查与非 root 容器冒烟测试。主分支发布使用提交哈希生成不可变 GHCR 镜像，并附带 SBOM 与来源证明。可选部署流程会选择精确镜像标签，同时验证公开健康检查与实际运行镜像摘要。
+
+## Local development / 本地开发
 
 ```bash
 npm install
-npm run dev     # http://127.0.0.1:4173   (and /keystatic for the CMS)
-npm run build   # type-check + static/SSG
-npm run build:static # public export in out/; excludes Keystatic routes
-npm run start   # serve the production build
+npm run dev
+npm run build
+npm run build:static
 ```
 
-## Routes
+The development server listens on `http://127.0.0.1:4173`. Local authoring is available at `/keystatic`; that route does not exist in the exported production site.
 
-```
-/                      home — hero, work (by category), about, manifesto, closing
-/blog, /blog/[slug]    writing — index + posts (SSG)
-/work/[slug]           project case-studies (SSG)
-/contact               contact page (form + links)
-/keystatic             in-browser CMS (no site chrome)
-```
+开发服务器默认运行在 `http://127.0.0.1:4173`。本地内容编辑入口为 `/keystatic`；该路由不会出现在生产静态导出中。
 
-## Writing & work content (the CMS)
+## Public routes / 公开路由
 
-Two **separate** collections, edited at `/keystatic`:
+| Route / 路由 | Purpose / 用途 |
+| --- | --- |
+| `/` | Primary project and profile surface / 主要项目与内容界面 |
+| `/blog` | Writing index / 文章索引 |
+| `/blog/[slug]` | Static article / 静态文章详情 |
+| `/work/[slug]` | Static case study / 静态案例详情 |
+| `/contact` | Collaboration entry / 协作入口 |
+| `/healthz` | Deployment health check / 部署健康检查 |
 
-- **Blog posts** → `src/content/posts/*.mdoc`
-- **Work case-studies** → `src/content/work/*.mdoc`
+## Accessibility and resilience / 可访问性与韧性
 
-In dev (`storage: { kind: "local" }` in `keystatic.config.ts`) the CMS edits
-these files directly — write a post, save, commit, push. The site reads them at
-build time via Keystatic's reader, so they're statically generated.
+- Semantic landmarks and heading structure support assistive navigation.
+- Tabs expose selected state and support click, Left/Right, Home, and End navigation.
+- Focus indicators remain visible across mouse and keyboard use.
+- Reduced-motion preferences disable non-essential transitions.
+- Touch and narrow-screen layouts do not depend on WebGL.
+- Local fonts and local media keep builds independent of third-party asset delivery.
 
-The production image intentionally contains neither `/keystatic` nor
-`/api/keystatic`. Author content locally, commit it, and let CI rebuild the
-static site. A future authenticated CMS would be a separate deployment decision
-rather than an accidental public route.
+- 语义化地标与标题结构支持辅助导航。
+- 标签页公开当前选择状态，并支持点击、左右方向键、Home 与 End 键。
+- 鼠标和键盘操作都保留清晰的焦点指示。
+- 系统开启减少动态效果后，会停用非必要过渡。
+- 触控与窄屏布局不依赖 WebGL。
+- 本地字体与媒体资源避免构建过程依赖第三方资源服务。
 
-## Production deployment
+## Repository map / 仓库结构
 
-Production is an immutable static container rather than a long-running Next.js
-server:
-
-1. `npm run build:static` copies the project to an isolated build directory,
-   removes the development-only Keystatic routes, and exports `out/`.
-2. The multi-stage `Dockerfile` packages `out/` in unprivileged NGINX on port
-   `8080`; both base images are pinned by digest.
-3. GitHub Actions verifies the export and dependency audit, then publishes
-   `ghcr.io/yxflc11/wenweb:sha-<40-character-commit>` with SBOM and provenance.
-4. Coolify deployment is gated by `COOLIFY_DEPLOY_ENABLED=true`, uses the
-   Coolify API to select that exact tag, waits for explicit success, performs a
-   public health check, and verifies the running Registry digest through a
-   restricted SSH command.
-
-The public health endpoint is `/healthz`. `wenweb.net` is canonical;
-`www.wenweb.net` is redirected by the reverse proxy.
-
-**Before/after launch**
-- Canonical metadata is fixed to `https://wenweb.net` in `src/app/layout.tsx`.
-- Contact form posts to Formspree (`src/data.ts → formEndpoint`) — swap for your
-  own API route later if you build a custom inbox.
-- Keystatic editing remains local-only; production is a static export.
-
-## Performance & accessibility
-
-- The heavy glass canvases pause (`frameloop`) when scrolled out of view; the
-  warp tunnel and caustic field skip drawing when inactive; the background WebGL
-  is disabled on touch / small screens.
-- `prefers-reduced-motion` disables Lenis, the loader animation, scroll reveals,
-  and the warp pin (statements fall back to a static stack). Visible focus rings
-  and a skip-to-content link are included.
+| Path / 路径 | Responsibility / 职责 |
+| --- | --- |
+| `src/app` | App Router pages, metadata, and route boundaries / 页面、元数据与路由边界 |
+| `src/components` | Interface, content, reading, and visual components / 界面、内容、阅读与视觉组件 |
+| `src/content` | Markdoc writing and case studies / Markdoc 文章与案例 |
+| `public` | Fonts, screenshots, and runtime media / 字体、截图与运行媒体 |
+| `scripts` | Isolated static export tooling / 隔离静态导出工具 |
+| `.github/workflows` | Verification, container publishing, and deployment gates / 验证、容器发布与部署门禁 |

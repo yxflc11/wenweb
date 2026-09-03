@@ -1,19 +1,12 @@
-"use client";
+import type { Metadata } from "next";
+import OilOilClone from "@/components/sites/oiloil-org-5c46804e/root-8a5edab2/OilOilClone";
 
-import Hero from "@/components/Hero";
-import Work from "@/components/Work";
-import About from "@/components/About";
-import Manifesto from "@/components/Manifesto";
-import Closing from "@/components/Closing";
+export const metadata: Metadata = {
+  title: { absolute: "WEN® — Still becoming, never settling" },
+  description:
+    "WEN® projects, AI automation practice, prompt systems, writing, and collaboration."
+};
 
 export default function HomePage() {
-  return (
-    <main className="page" id="main">
-      <Hero />
-      <Work />
-      <About />
-      <Manifesto />
-      <Closing />
-    </main>
-  );
+  return <OilOilClone />;
 }
